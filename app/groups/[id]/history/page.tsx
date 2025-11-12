@@ -36,10 +36,11 @@ export default function HistoryPage() {
   }, [id])
   
   return (
-    <div className="space-y-6">
-      <h1 className="text-xl font-semibold">History & Roadmap</h1>
-      <div className="p-3 bg-purple-600/20 border border-purple-600/30 rounded">
+    <div className="space-y-10">
+      <h1 className="text-2xl font-semibold tracking-tight">History & Roadmap</h1>
+      <div className="p-4 bg-primary/20 border border-primary/30 rounded-xl">
         <div className="text-sm font-medium mb-2">Generate Challenge</div>
+        <p className="text-sm opacity-80 mb-3">Create a fresh challenge tailored to your group.</p>
         <GenerateButton groupId={String(id)} />
       </div>
       

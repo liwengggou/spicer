@@ -22,11 +22,16 @@ export function GenerateButton({ groupId }: { groupId: string }) {
     }
   }
   return (
-    <div className="space-y-2">
-      <button onClick={run} className="rounded bg-white px-3 py-2 text-black">Generate</button>
+    <div className="space-y-3">
+      <button
+        onClick={run}
+        className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-primary text-background-dark text-sm font-semibold tracking-[0.015em] glow-effect transition-transform active:scale-95"
+      >
+        Generate
+      </button>
       {status && <p className="text-xs opacity-80">{status}</p>}
       {result && (
-        <div className="rounded border border-white/10 p-3">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-1">
           <div className="font-medium">{result.title}</div>
           <div className="text-sm opacity-80">{result.description}</div>
         </div>

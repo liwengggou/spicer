@@ -118,35 +118,49 @@ export default function PreferencesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Preferences for {String(id)}</h1>
-      
+    <div className="space-y-10">
+      <section className="relative flex w-full items-center justify-center overflow-hidden">
+        <div
+          className="absolute top-1/4 -left-1/4 w-[150vw] h-[150vw] md:w-[100vw] md:h-[100vw] gradient-blob"
+          aria-hidden="true"
+        />
+        <div className="relative z-10 flex w/full max-w-md flex-col items-center justify-end px-2 pb-8 text-center">
+          <div className="flex-grow flex flex-col justify-center items-center pt-8">
+            <h1 className="text-white tracking-tight text-4xl font-semibold leading-tight max-w-sm">
+              Preferences
+            </h1>
+            <p className="text-white/80 text-base font-medium leading-normal pt-3 max-w-xs">
+              Group: {String(id)}
+            </p>
+          </div>
+        </div>
+      </section>
+
       {isFrozen && (
         <div className="p-3 bg-yellow-900/20 border border-yellow-600/30 rounded">
           <p className="text-sm text-yellow-400">
-            ⚠️ Preferences are frozen for this week (mid-week policy). 
-            Changes will apply starting next week.
+            ⚠️ Preferences are frozen for this week (mid-week policy). Changes will apply starting next week.
           </p>
         </div>
       )}
-      
-      <div className="space-y-4">
-        <label className="block">Spice Level
-          <input 
-            type="number" 
-            min={1} 
-            max={5} 
-            value={form.spiceLevel} 
-            onChange={(e) => update("spiceLevel", Number(e.target.value))} 
-            className="mt-1 w-24 rounded bg-white/10 p-2"
+
+      <div className="space-y-4 bg-white/5 border border-white/10 rounded-lg p-4">
+        <label className="block text-white/90">Spice Level
+          <input
+            type="number"
+            min={1}
+            max={5}
+            value={form.spiceLevel}
+            onChange={(e) => update("spiceLevel", Number(e.target.value))}
+            className="mt-1 w-24 rounded bg-white/5 border border-white/10 px-3 py-2 text-white placeholder:text-white/50 disabled:opacity-60"
             disabled={isFrozen && !!currentPrefs}
           />
         </label>
-        <label className="block">Times Per Day
-          <select 
-            value={form.timesPerDay} 
-            onChange={(e) => update("timesPerDay", Number(e.target.value) as 1|2|3)} 
-            className="mt-1 rounded bg-white/10 p-2"
+        <label className="block text-white/90">Times Per Day
+          <select
+            value={form.timesPerDay}
+            onChange={(e) => update("timesPerDay", Number(e.target.value) as 1|2|3)}
+            className="mt-1 rounded bg-white/5 border border-white/10 px-3 py-2 text-white disabled:opacity-60"
             disabled={isFrozen && !!currentPrefs}
           >
             <option value={1}>1</option>
@@ -154,32 +168,36 @@ export default function PreferencesPage() {
             <option value={3}>3</option>
           </select>
         </label>
-        <label className="block">Keywords
-          <input 
-            type="text" 
-            value={form.keywords} 
-            onChange={(e) => update("keywords", e.target.value)} 
-            className="mt-1 w-full rounded bg-white/10 p-2"
+        <label className="block text-white/90">Keywords
+          <input
+            type="text"
+            value={form.keywords}
+            onChange={(e) => update("keywords", e.target.value)}
+            className="mt-1 w-full rounded bg-white/5 border border-white/10 px-3 py-2 text-white placeholder:text-white/50 disabled:opacity-60"
             disabled={isFrozen && !!currentPrefs}
+            placeholder="e.g., surprises, outdoors"
           />
         </label>
-        <label className="flex items-center gap-2">
-          <input 
-            type="checkbox" 
-            checked={form.longDistance} 
+        <label className="flex items-center gap-2 text-white/90">
+          <input
+            type="checkbox"
+            checked={form.longDistance}
             onChange={(e) => update("longDistance", e.target.checked)}
             disabled={isFrozen && !!currentPrefs}
+            className="rounded border-white/20 bg-white/5"
           />
           Long-Distance Relationship Mode
         </label>
-        <button 
-          onClick={save} 
-          className="rounded bg-white px-3 py-2 text-black disabled:bg-gray-400 disabled:cursor-not-allowed"
-          disabled={isCreating}
-        >
-          {isFrozen && currentPrefs ? "Save for Next Week" : "Save"}
-        </button>
-        {status && <p className="text-sm opacity-80">{status}</p>}
+        <div className="pt-2">
+          <button
+            onClick={save}
+            className="flex min-w-[84px] w-full cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-6 bg-primary text-background-dark text-base font-semibold leading-normal tracking-[0.015em] glow-effect transition-transform active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+            disabled={isCreating}
+          >
+            <span className="truncate">{isFrozen && currentPrefs ? "Save for Next Week" : "Save Preferences"}</span>
+          </button>
+        </div>
+        {status && <p className="text-sm text-white/80">{status}</p>}
       </div>
     </div>
   )

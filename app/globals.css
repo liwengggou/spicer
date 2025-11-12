@@ -15,3 +15,34 @@ body {
   background-color: hsl(var(--bg));
   color: hsl(var(--fg));
 }
+
+/* Utilities matching sample UI aesthetics */
+@layer utilities {
+  .gradient-blob {
+    background: linear-gradient(120deg, #A783FF, #FF73E0, #C3FFFC);
+    filter: blur(120px);
+    opacity: 0.35;
+    animation: blob-rotate 20s cubic-bezier(0.8, 0.2, 0.2, 0.8) alternate infinite;
+    border-radius: 9999px;
+  }
+
+  .glow-effect {
+    box-shadow:
+      0 0 15px 0 rgba(167, 131, 255, 0.5),
+      0 0 30px 0 rgba(167, 131, 255, 0.3);
+  }
+}
+
+@keyframes blob-rotate {
+  0% {
+    transform: translate(-10%, 10%) rotate(-15deg) scale(1.0);
+  }
+  100% {
+    transform: translate(10%, -10%) rotate(15deg) scale(1.2);
+  }
+}
+
+/* Layout groundwork for hero staging */
+body {
+  min-height: 100dvh;
+}

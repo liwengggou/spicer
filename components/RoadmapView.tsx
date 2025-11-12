@@ -104,8 +104,8 @@ export function RoadmapView({ groupId }: { groupId: string }) {
       
       <div className="space-y-6">
         {weeks.map(week => (
-          <div key={week.weekStart} className="border border-white/10 rounded-lg p-4">
-            <h3 className="text-sm font-medium mb-3 text-gray-300">{week.weekLabel}</h3>
+          <div key={week.weekStart} className="bg-white/5 border border-white/10 rounded-xl p-4">
+            <h3 className="text-sm font-medium mb-3 opacity-80">{week.weekLabel}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {week.challenges.map(challenge => {
@@ -116,7 +116,7 @@ export function RoadmapView({ groupId }: { groupId: string }) {
                 return (
                   <div 
                     key={challenge.id}
-                    className={`p-3 rounded border ${
+                    className={`p-3 rounded-lg border ${
                       isComplete 
                         ? "bg-green-900/20 border-green-600/30" 
                         : isExpired 
@@ -132,7 +132,7 @@ export function RoadmapView({ groupId }: { groupId: string }) {
                             📱
                           </span>
                         )}
-                        <span className={`text-xs px-1 py-0.5 rounded ${
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
                           isComplete 
                             ? "bg-green-600/20 text-green-300" 
                             : isExpired 

@@ -20,6 +20,8 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@tailwindcss/container-queries": "^0.1.1",
+    "@tailwindcss/forms": "^0.5.10",
     "@types/luxon": "^3.7.1",
     "@types/node": "^20.11.30",
     "@types/react": "^18.2.66",

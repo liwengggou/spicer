@@ -12,3 +12,5 @@ coverage/
 *.tar.gz
 *.tmp
 .trae/
+bin_cli/gh
+.vercel/
