@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Spicer - Relationship Challenge App</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&amp;family=Plus+Jakarta+Sans:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#A783FF",
+            "accent": "#FFB6FF",
+            "background-light": "#f8f6f7", // Fallback, not used in this dark-first design
+            "background-dark": "#0A0A0F",
+          },
+          fontFamily: {
+            "display": ["Inter", "Plus Jakarta Sans", "Noto Sans", "sans-serif"]
+          },
+          borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      overflow: hidden; /* Prevent scrolling on the onboarding screen */
+    }
+    .gradient-blob {
+      background: linear-gradient(120deg, #A783FF, #FF73E0, #C3FFFC);
+      filter: blur(120px);
+      opacity: 0.35;
+      animation: rotate 20s cubic-bezier(0.8, 0.2, 0.2, 0.8) alternate infinite;
+      border-radius: 9999px;
+    }
+    @keyframes rotate {
+      0% {
+        transform: translate(-10%, 10%) rotate(-15deg) scale(1.0);
+      }
+      100% {
+        transform: translate(10%, -10%) rotate(15deg) scale(1.2);
+      }
+    }
+    .glow-effect {
+      box-shadow: 0 0 15px 0px rgba(167, 131, 255, 0.5), 0 0 30px 0px rgba(167, 131, 255, 0.3);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-display">
+<div class="relative flex h-screen w-full flex-col items-center justify-end bg-background-dark dark overflow-hidden group/design-root">
+<!-- Animated Gradient Blob -->
+<div class="absolute top-1/4 -left-1/4 w-[150vw] h-[150vw] md:w-[100vw] md:h-[100vw] gradient-blob" data-alt="A large, soft, abstract gradient swirl with purple, pink, and cyan colors, providing a fluid background effect."></div>
+<div class="relative z-10 flex h-full w-full max-w-md flex-col items-center justify-end px-4 pb-12 text-center">
+<div class="flex-grow flex flex-col justify-center items-center">
+<!-- Headline Text -->
+<h1 class="text-white tracking-tight text-4xl font-semibold leading-tight max-w-sm">Daily challenges. Custom to your mood.</h1>
+<!-- Body Text -->
+<p class="text-white/80 text-base font-medium leading-normal pt-3 max-w-xs">Built by AI. Inspired by your love story.</p>
+</div>
+<!-- Single Button -->
+<div class="flex w-full pt-8">
+<button class="flex min-w-[84px] w-full cursor-pointer items-center justify-center overflow-hidden rounded-full h-14 px-5 bg-primary text-background-dark text-base font-semibold leading-normal tracking-[0.015em] glow-effect transition-transform active:scale-95">
+<span class="truncate">Let’s Spice Things Up</span>
+</button>
+</div>
+</div>
+</div>
+</body></html>
