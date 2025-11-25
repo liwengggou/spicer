@@ -9,3 +9,7 @@ export function nowTokyo() {
 export function formatTokyo(ts: string | Date | number) {
   return DateTime.fromJSDate(new Date(ts)).setZone(TOKYO_ZONE).toFormat("yyyy-LL-dd HH:mm")
 }
+
+export function formatTokyoDate(ts: string | Date | number, fmt = "MMM d, yyyy") {
+  return DateTime.fromJSDate(new Date(ts)).setZone(TOKYO_ZONE).toFormat(fmt)
+}

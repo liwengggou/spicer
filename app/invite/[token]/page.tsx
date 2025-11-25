@@ -2,7 +2,6 @@
 import { useParams, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { supabase, useSession } from "../../../lib/supabaseClient"
-import { callEdge } from "../../../lib/edge"
 import { logger } from "../../../lib/logger"
 
 export default function InviteJoinPage() {
@@ -20,8 +19,11 @@ export default function InviteJoinPage() {
       try {
         const res = await fetch("/api/consume-invite", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token, userId: session.user.id })
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ token })
         })
         if (!res.ok) throw new Error(`consume_invite_${res.status}`)
         const result = await res.json()
@@ -55,9 +57,9 @@ export default function InviteJoinPage() {
         <button
           onClick={signInWithGoogle}
           disabled={joining}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm font-medium"
+          className="flex min-w-[84px] w-full cursor-pointer items-center justify-center overflow-hidden rounded-full h-14 px-5 bg-primary text-background-dark text-base font-semibold leading-normal tracking-[0.015em] glow-effect transition-transform active:scale-95"
         >
-          Sign in with Google to join
+          Sign in with Google
         </button>
       )}
     </div>

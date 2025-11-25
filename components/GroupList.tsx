@@ -1,8 +1,9 @@
 "use client"
-import { useEffect, useState } from "react"
-import { supabase, useSession } from "../lib/supabaseClient"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
+import { supabase, useSession } from "../lib/supabaseClient"
 import { logger } from "../lib/logger"
+import { formatTokyoDate } from "../lib/time"
 
 interface Group {
   id: string
@@ -10,24 +11,25 @@ interface Group {
   role: string
 }
 
-export function GroupList() {
+interface Props {
+  selectedGroupId?: string | null
+  onSelect?: (groupId: string) => void
+  refreshKey?: number
+}
+
+export function GroupList({ selectedGroupId, onSelect, refreshKey }: Props) {
   const [groups, setGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
   const session = useSession()
 
-  useEffect(() => {
-    if (!session) return
-    loadGroups()
-  }, [session])
-
-  const loadGroups = async () => {
+  const loadGroups = useCallback(async () => {
     try {
       logger.info("Loading user groups")
-      
+
       if (!supabase) {
         throw new Error("Supabase client not available")
       }
-      
+
       const { data, error } = await supabase
         .from("group_participants")
         .select("group_id, role, groups(created_at)")
@@ -44,13 +46,27 @@ export function GroupList() {
       }))
 
       setGroups(formattedGroups)
+      if (!selectedGroupId && formattedGroups[0]) {
+        onSelect?.(formattedGroups[0].id)
+      }
       logger.info("Groups loaded", { count: formattedGroups.length })
     } catch (err) {
       logger.error("Error loading groups", { error: err })
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedGroupId, onSelect])
+
+  useEffect(() => {
+    if (!session) return
+    loadGroups()
+  }, [session, refreshKey, loadGroups])
+
+  useEffect(() => {
+    if (!selectedGroupId && groups[0]) {
+      onSelect?.(groups[0].id)
+    }
+  }, [selectedGroupId, groups, onSelect])
 
   if (loading) {
     return (
@@ -68,7 +84,7 @@ export function GroupList() {
       <section className="relative flex w-full items-center justify-center overflow-hidden">
         <div className="relative z-10 flex w-full max-w-md flex-col items-center justify-end px-2 pb-8 text-center">
           <h2 className="text-white tracking-tight text-2xl font-semibold">Your Group</h2>
-          <p className="text-white/80 text-sm font-medium pt-3">You haven't joined any groups yet.</p>
+          <p className="text-white/80 text-sm font-medium pt-3">You haven&apos;t joined any groups yet.</p>
         </div>
       </section>
     )
@@ -80,11 +96,21 @@ export function GroupList() {
         <h2 className="text-white tracking-tight text-2xl font-semibold">Your Group</h2>
         <div className="w-full pt-6 space-y-3">
           {groups.map(group => (
-            <div key={group.id} className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl">
+            <div
+              key={group.id}
+              className={`flex items-center justify-between p-3 border rounded-xl transition hover:border-white/30 ${
+                selectedGroupId === group.id ? "bg-primary/10 border-primary/40" : "bg-white/5 border-white/10"
+              }`}
+            >
               <div>
-                <p className="font-semibold text-sm">Group {group.id.slice(0, 8)}</p>
+                <button
+                  className="font-semibold text-sm text-left"
+                  onClick={() => onSelect?.(group.id)}
+                >
+                  Group {group.id.slice(0, 8)}
+                </button>
                 <p className="text-xs opacity-60">
-                  {group.created_at ? new Date(group.created_at).toLocaleDateString() : ""} • {group.role}
+                  {group.created_at ? formatTokyoDate(group.created_at) : ""} • {group.role}
                 </p>
               </div>
               <div className="flex gap-2">

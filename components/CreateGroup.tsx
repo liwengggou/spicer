@@ -73,12 +73,17 @@ export function CreateGroup() {
         console.error("No user ID found")
         throw new Error("No user ID")
       }
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData.session?.access_token
+      if (!token) {
+        throw new Error("No session token")
+      }
       
       console.log("Calling server API to create group...")
       const res = await fetch("/api/create-group", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId })
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({})
       })
       if (!res.ok) {
         console.error("Server API error:", res.status)
@@ -154,7 +159,7 @@ export function CreateGroup() {
           </div>
           
           <p className="text-xs opacity-60">
-            Share this link with your partner. They'll join the group when they click it.
+            Share this link with your partner. They&apos;ll join the group when they click it.
           </p>
         </div>
       )}

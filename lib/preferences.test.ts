@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect } from "../test/harness"
 import { DateTime } from "luxon"
 import { isPreferencesFrozen, getCurrentWeekStart, getNextWeekStart } from "../lib/preferences"
 

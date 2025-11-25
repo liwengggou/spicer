@@ -9,13 +9,13 @@ export function isPreferencesFrozen(testDate?: DateTime): boolean {
   return dayOfWeek >= 3
 }
 
-export function getNextWeekStart(): string {
-  const now = DateTime.now().setZone("Asia/Tokyo")
+export function getNextWeekStart(reference?: DateTime): string {
+  const now = (reference || DateTime.now().setZone("Asia/Tokyo")).setZone("Asia/Tokyo")
   const nextWeek = now.plus({ weeks: 1 }).startOf("week")
   return nextWeek.toISO() || ""
 }
 
-export function getCurrentWeekStart(): string {
-  const now = DateTime.now().setZone("Asia/Tokyo")
+export function getCurrentWeekStart(reference?: DateTime): string {
+  const now = (reference || DateTime.now().setZone("Asia/Tokyo")).setZone("Asia/Tokyo")
   return now.startOf("week").toISO() || ""
 }

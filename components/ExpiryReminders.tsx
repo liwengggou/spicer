@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { supabase } from "../lib/supabaseClient"
 import { DateTime } from "luxon"
 import { logger } from "../lib/logger"
@@ -18,19 +18,11 @@ export function ExpiryReminders({ groupId }: { groupId: string }) {
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    loadReminders()
-    
-    // Check every minute for updates
-    const interval = setInterval(loadReminders, 60000)
-    return () => clearInterval(interval)
-  }, [groupId])
-
-  const loadReminders = async () => {
+  const loadReminders = useCallback(async () => {
     try {
       logger.info("Loading expiry reminders", { groupId })
       
-      if (!supabase) {
+      if (!supabase || !groupId) {
         throw new Error("Supabase client not available")
       }
       
@@ -68,7 +60,20 @@ export function ExpiryReminders({ groupId }: { groupId: string }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [groupId])
+
+  useEffect(() => {
+    if (!groupId) {
+      setReminders([])
+      setLoading(false)
+      return
+    }
+    loadReminders()
+    
+    // Check every minute for updates
+    const interval = setInterval(loadReminders, 60000)
+    return () => clearInterval(interval)
+  }, [groupId, loadReminders])
 
   const formatTimeUntilExpiry = (minutes: number): string => {
     if (minutes < 1) return "Less than 1 minute"

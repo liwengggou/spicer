@@ -1,41 +1,42 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { AuthGate } from "../components/AuthGate"
 import { supabase, useSession } from "../lib/supabaseClient"
-import Link from "next/link"
-import { GenerateButton } from "../components/GenerateButton"
 import { NotificationsFeed } from "../components/NotificationsFeed"
-import { CreateGroup } from "../components/CreateGroup"
 import { GroupList } from "../components/GroupList"
 import { ExpiryReminders } from "../components/ExpiryReminders"
 
 export default function HomePage() {
   const session = useSession()
-  const [selectedGroupId, setSelectedGroupId] = useState<string>("demo")
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [inviteLink, setInviteLink] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [groupRefreshToken, setGroupRefreshToken] = useState(0)
   const handleCTA = async () => {
     if (!session && supabase) {
-      await supabase.auth.signInWithOAuth({ provider: "google" })
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: typeof window !== "undefined" ? window.location.href : undefined }
+      })
       return
     }
     try {
       setIsCreating(true)
       setError(null)
-      const { data: userData } = await supabase.auth.getUser()
-      const userId = userData.user?.id
-      if (!userId) throw new Error("No user ID")
+      const token = session?.access_token
+      if (!token) throw new Error("No session token")
       const res = await fetch("/api/create-group", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId })
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({})
       })
       if (!res.ok) throw new Error("Failed to create group")
       const payload = await res.json()
       const inviteUrl = `${window.location.origin}/invite/${payload.token}`
       setInviteLink(inviteUrl)
       setSelectedGroupId(String(payload.groupId))
+      setGroupRefreshToken((prev) => prev + 1)
     } catch (e: any) {
       setError(e?.message || "Failed to create group")
     } finally {
@@ -44,19 +45,6 @@ export default function HomePage() {
   }
   
   // Pick the most recent group after sign-in
-  useEffect(() => {
-    async function pickLatest() {
-      if (!session || !supabase) return
-      const { data } = await supabase
-        .from("group_participants")
-        .select("group_id")
-        .limit(1)
-      const first = data && data[0]
-      if (first?.group_id) setSelectedGroupId(String(first.group_id))
-    }
-    pickLatest()
-  }, [session])
-  
   return (
     <div className="space-y-10">
       <section className="relative flex w-full items-center justify-center overflow-hidden">
@@ -113,8 +101,19 @@ export default function HomePage() {
       <div id="post-hero" className="space-y-6">
         <AuthGate>
           <div className="space-y-4">
-            <GroupList />
-            <ExpiryReminders groupId={selectedGroupId} />
+            <GroupList
+              selectedGroupId={selectedGroupId ?? undefined}
+              onSelect={setSelectedGroupId}
+              refreshKey={groupRefreshToken}
+            />
+            {selectedGroupId ? (
+              <>
+                <ExpiryReminders groupId={selectedGroupId} />
+                <NotificationsFeed groupId={selectedGroupId} />
+              </>
+            ) : (
+              <p className="text-sm text-white/70">Pick a group to see reminders and notifications.</p>
+            )}
           </div>
         </AuthGate>
       </div>

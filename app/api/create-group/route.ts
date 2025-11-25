@@ -1,40 +1,54 @@
-import { createClient } from "@supabase/supabase-js"
+import { logger } from "../../../lib/logger"
+import { getServiceSupabaseClient, requireUser } from "../../../lib/serverSupabase"
 
 export async function POST(req: Request) {
-  const input = await req.json()
-  const userId = input?.userId as string | undefined
-  if (!userId) return new Response("", { status: 400 })
+  try {
+    const user = await requireUser(req)
+    if (!user) {
+      return new Response("Unauthorized", { status: 401 })
+    }
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.supabase_url || ""
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.service_role_key || ""
-  if (!url || !key) return new Response("", { status: 500 })
+    const supabase = getServiceSupabaseClient()
+    const { data: groupData, error: groupError } = await supabase
+      .from("groups")
+      .insert({ created_by: user.id })
+      .select()
+      .single()
 
-  const supabase = createClient(url, key)
+    if (groupError || !groupData) {
+      logger.error("group_create_failed", { error: groupError })
+      return new Response("Failed to create group", { status: 500 })
+    }
 
-  const { data: groupData, error: groupError } = await supabase
-    .from("groups")
-    .insert({ created_by: userId })
-    .select()
-    .single()
+    const { error: participantError } = await supabase
+      .from("group_participants")
+      .insert({ group_id: groupData.id, user_id: user.id, role: "creator" })
 
-  if (groupError || !groupData) return new Response("", { status: 500 })
+    if (participantError) {
+      logger.error("group_creator_insert_failed", { error: participantError })
+      return new Response("Failed to link creator", { status: 500 })
+    }
 
-  const { error: participantError } = await supabase
-    .from("group_participants")
-    .insert({ group_id: groupData.id, user_id: userId, role: "creator" })
+    const token = crypto.randomUUID()
 
-  if (participantError) return new Response("", { status: 500 })
+    const { error: inviteError } = await supabase
+      .from("invites")
+      .insert({ token, group_id: groupData.id, created_by: user.id })
 
-  const token = crypto.randomUUID()
+    if (inviteError) {
+      logger.error("invite_generation_failed", { error: inviteError })
+      return new Response("Failed to create invite", { status: 500 })
+    }
 
-  const { error: inviteError } = await supabase
-    .from("invites")
-    .insert({ token, group_id: groupData.id, created_by: userId })
+    logger.groupCreated(groupData.id, user.id)
+    logger.inviteGenerated(groupData.id, token)
 
-  if (inviteError) return new Response("", { status: 500 })
-
-  return new Response(JSON.stringify({ groupId: groupData.id, token }), {
-    headers: { "Content-Type": "application/json" },
-    status: 200,
-  })
+    return new Response(JSON.stringify({ groupId: groupData.id, token }), {
+      headers: { "Content-Type": "application/json" },
+      status: 200,
+    })
+  } catch (error) {
+    logger.error("group_create_unhandled", { error })
+    return new Response("Server error", { status: 500 })
+  }
 }

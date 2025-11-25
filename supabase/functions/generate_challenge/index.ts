@@ -18,18 +18,73 @@ function bad(status = 400) {
   return new Response("", { status })
 }
 
+async function fetchHistory(groupId: string) {
+  const pageSize = 500
+  let from = 0
+  const all: Array<{ title: string; description: string }> = []
+  while (true) {
+    const { data, error } = await supabase
+      .from("challenges")
+      .select("title,description")
+      .eq("group_id", groupId)
+      .order("scheduled_at", { ascending: true })
+      .range(from, from + pageSize - 1)
+    if (error) throw error
+    if (!data?.length) break
+    all.push(...data)
+    if (data.length < pageSize) break
+    from += pageSize
+  }
+  return all
+}
+
+function extract(jsonl: string): { title: string; description: string } | null {
+  try {
+    const lines = jsonl.split(/\r?\n/)
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i]
+      if (line.startsWith("data:")) {
+        const s = line.slice(5).trim()
+        const obj = JSON.parse(s)
+        if (obj && obj.type === "reply" && obj.payload && obj.payload.content) {
+          const c: string = obj.payload.content
+          const match = c.match(/\{[\s\S]*\}/)
+          if (match) {
+            const parsed = JSON.parse(match[0])
+            if (parsed && typeof parsed.title === "string" && typeof parsed.description === "string") {
+              return { title: parsed.title, description: parsed.description }
+            }
+          }
+        }
+      }
+    }
+  } catch {}
+  return null
+}
+
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== "POST") return bad(405)
   const input = await req.json()
   const { groupId } = input as { groupId: string }
-  const { data: prefs } = await supabase.from("preferences_weekly").select("spice_level,times_per_day,keywords,long_distance").eq("group_id", groupId).order("week_start_tokyo", { ascending: false }).limit(1).maybeSingle()
-  const { data: history } = await supabase.from("challenges").select("title,description").eq("group_id", groupId).order("scheduled_at", { ascending: false }).limit(200)
+  const { data: prefs } = await supabase
+    .from("preferences_weekly")
+    .select("spice_level,times_per_day,keywords,long_distance")
+    .eq("group_id", groupId)
+    .order("week_start_tokyo", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const history = await fetchHistory(groupId)
+
   const payload = {
     spiceLevel: prefs?.spice_level ?? 3,
     timesPerDay: prefs?.times_per_day ?? 2,
     keywords: (prefs?.keywords || "").split(",").map(s => s.trim()).filter(Boolean),
     longDistanceMode: !!prefs?.long_distance,
-    priorChallenges: (history || []).map(h => ({ title: h.title, description: h.description })),
+    guidance: prefs?.long_distance
+      ? "Only provide remote-friendly, non-physical challenges."
+      : "Physical activities are allowed if they match the spice level.",
+    priorChallenges: history.map(h => ({ title: h.title, description: h.description })),
   }
   log({ name: "ai_request", group_id: groupId, data: { priorCount: payload.priorChallenges.length, sampleTitles: payload.priorChallenges.slice(0, 3).map(x => x.title) } })
   const body = {
@@ -51,29 +106,6 @@ export default async function handler(req: Request): Promise<Response> {
     return bad(504)
   } finally {
     clearTimeout(t)
-  }
-  function extract(jsonl: string): { title: string; description: string } | null {
-    try {
-      const lines = jsonl.split(/\r?\n/)
-      for (let i = lines.length - 1; i >= 0; i--) {
-        const line = lines[i]
-        if (line.startsWith("data:")) {
-          const s = line.slice(5).trim()
-          const obj = JSON.parse(s)
-          if (obj && obj.type === "reply" && obj.payload && obj.payload.content) {
-            const c: string = obj.payload.content
-            const match = c.match(/\{[\s\S]*\}/)
-            if (match) {
-              const parsed = JSON.parse(match[0])
-              if (parsed && typeof parsed.title === "string" && typeof parsed.description === "string") {
-                return { title: parsed.title, description: parsed.description }
-              }
-            }
-          }
-        }
-      }
-    } catch {}
-    return null
   }
   const out = extract(text)
   if (!out) return bad(502)
