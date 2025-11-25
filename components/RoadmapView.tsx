@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { supabase } from "../lib/supabaseClient"
 import { DateTime } from "luxon"
 import { logger } from "../lib/logger"
@@ -9,6 +9,7 @@ interface Challenge {
   title: string
   description: string
   scheduled_at: string
+  expires_at: string
   status: string
   long_distance: boolean
 }
@@ -23,11 +24,7 @@ export function RoadmapView({ groupId }: { groupId: string }) {
   const [weeks, setWeeks] = useState<WeekGroup[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    loadRoadmap()
-  }, [groupId])
-
-  const loadRoadmap = async () => {
+  const loadRoadmap = useCallback(async () => {
     try {
       logger.info("Loading roadmap", { groupId })
       
@@ -37,7 +34,7 @@ export function RoadmapView({ groupId }: { groupId: string }) {
       
       const { data, error } = await supabase
         .from("challenges")
-        .select("id, title, description, scheduled_at, status, long_distance")
+        .select("id, title, description, scheduled_at, expires_at, status, long_distance")
         .eq("group_id", groupId)
         .order("scheduled_at", { ascending: true })
 
@@ -48,7 +45,8 @@ export function RoadmapView({ groupId }: { groupId: string }) {
       
       data?.forEach(challenge => {
         const scheduledDate = DateTime.fromISO(challenge.scheduled_at).setZone("Asia/Tokyo")
-        const weekStart = scheduledDate.startOf("week").toFormat("yyyy-MM-dd")
+        const weekStartKey = scheduledDate.startOf("week")
+        const weekStart = weekStartKey.toISODate() || weekStartKey.toFormat("yyyy-MM-dd")
         
         if (!weekGroups[weekStart]) {
           weekGroups[weekStart] = []
@@ -59,7 +57,7 @@ export function RoadmapView({ groupId }: { groupId: string }) {
       // Convert to array and add labels
       const weeksArray: WeekGroup[] = Object.entries(weekGroups)
         .map(([weekStart, challenges]) => {
-          const weekDate = DateTime.fromISO(weekStart).setZone("Asia/Tokyo")
+          const weekDate = DateTime.fromISO(weekStart, { zone: "Asia/Tokyo" })
           const weekEnd = weekDate.endOf("week")
           
           return {
@@ -78,7 +76,11 @@ export function RoadmapView({ groupId }: { groupId: string }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [groupId])
+
+  useEffect(() => {
+    loadRoadmap()
+  }, [groupId, loadRoadmap])
 
   if (loading) {
     return (
@@ -110,9 +112,17 @@ export function RoadmapView({ groupId }: { groupId: string }) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {week.challenges.map(challenge => {
                 const scheduledTime = DateTime.fromISO(challenge.scheduled_at).setZone("Asia/Tokyo")
+                const expiresTime = DateTime.fromISO(challenge.expires_at).setZone("Asia/Tokyo")
                 const isComplete = challenge.status === "Complete"
-                const isExpired = scheduledTime < DateTime.now().setZone("Asia/Tokyo") && !isComplete
+                const isExpired = DateTime.now().setZone("Asia/Tokyo") > expiresTime && !isComplete
                 
+                const statusLabel = isComplete ? "Complete" : "Incomplete"
+                const statusStyle = isComplete
+                  ? "bg-green-600/20 text-green-300"
+                  : isExpired
+                  ? "bg-red-600/20 text-red-300"
+                  : "bg-yellow-600/20 text-yellow-300"
+
                 return (
                   <div 
                     key={challenge.id}
@@ -132,14 +142,8 @@ export function RoadmapView({ groupId }: { groupId: string }) {
                             📱
                           </span>
                         )}
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          isComplete 
-                            ? "bg-green-600/20 text-green-300" 
-                            : isExpired 
-                            ? "bg-red-600/20 text-red-300"
-                            : "bg-yellow-600/20 text-yellow-300"
-                        }`}>
-                          {isComplete ? "Complete" : isExpired ? "Expired" : "Pending"}
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${statusStyle}`}>
+                          {statusLabel}
                         </span>
                       </div>
                     </div>
@@ -149,6 +153,9 @@ export function RoadmapView({ groupId }: { groupId: string }) {
                     <p className="text-xs opacity-60">
                       {scheduledTime.toFormat("EEE, MMM d @ HH:mm")} Tokyo
                     </p>
+                    {isExpired && !isComplete && (
+                      <p className="text-[11px] text-red-300 mt-1">Past the expiry boundary in Tokyo.</p>
+                    )}
                   </div>
                 )
               })}

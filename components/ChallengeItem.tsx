@@ -1,28 +1,44 @@
 "use client"
-import { supabase, useSession } from "../lib/supabaseClient"
+import { DateTime } from "luxon"
 import { formatTokyo } from "../lib/time"
 import { useState } from "react"
-import { log } from "../lib/logger"
+import { useSession } from "../lib/supabaseClient"
 
 export function ChallengeItem({ c }: { c: any }) {
   const session = useSession()
   const [status, setStatus] = useState(c.status)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
   const isComplete = status === "Complete"
-  const isExpired = new Date(c.scheduled_at).getTime() < Date.now() && !isComplete
+  const expiresTokyo = DateTime.fromISO(c.expires_at).setZone("Asia/Tokyo")
+  const nowTokyo = DateTime.now().setZone("Asia/Tokyo")
+  const isExpired = nowTokyo > expiresTokyo && !isComplete
+  const statusLabel = isComplete ? "Complete" : "Incomplete"
+
   async function toggleComplete() {
-    if (!supabase || !session) return
+    if (!session?.access_token || pending || isComplete || isExpired) return
+    setPending(true)
+    setError(null)
     try {
-      await supabase.from("challenge_completion").insert({ challenge_id: c.id, user_id: session.user.id, completed_at: new Date().toISOString() })
-      const { data } = await supabase.from("challenge_completion").select("user_id").eq("challenge_id", c.id)
-      if ((data || []).length >= 2) {
-        await supabase.from("challenges").update({ status: "Complete" }).eq("id", c.id)
-        setStatus("Complete")
-        log({ name: "challenge_both_complete", challenge_id: c.id })
-      } else {
-        log({ name: "challenge_one_complete", challenge_id: c.id })
+      const res = await fetch(`/api/challenges/${c.id}/complete`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(text || `status_${res.status}`)
       }
-    } catch {}
+      const body = await res.json()
+      if (body?.status) {
+        setStatus(body.status)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to complete challenge")
+    } finally {
+      setPending(false)
+    }
   }
+
   return (
     <li className="rounded-xl border border-white/10 bg-white/5 p-4">
       <div className="flex items-start justify-between">
@@ -43,19 +59,27 @@ export function ChallengeItem({ c }: { c: any }) {
                 : "bg-yellow-600/20 text-yellow-300"
             }`}
           >
-            {isComplete ? "Complete" : isExpired ? "Expired" : "Pending"}
+            {statusLabel}
           </span>
         </div>
       </div>
-      <div className="mt-2 flex items-center justify-between">
-        <span className="text-xs opacity-60">{formatTokyo(c.scheduled_at)}</span>
+      <div className="mt-2 flex items-center justify-between text-xs opacity-60">
+        <div className="space-y-1">
+          <p>Scheduled: {formatTokyo(c.scheduled_at)} Tokyo</p>
+          <p>Expires: {formatTokyo(c.expires_at)} Tokyo</p>
+        </div>
         <button
           onClick={toggleComplete}
-          className="rounded-full bg-primary text-background-dark glow-effect text-xs font-semibold px-3 py-2 transition-transform active:scale-95"
+          disabled={!session || isComplete || isExpired || pending}
+          className="rounded-full bg-primary text-background-dark glow-effect text-xs font-semibold px-3 py-2 transition-transform active:scale-95 disabled:opacity-60"
         >
-          Mark complete
+          {pending ? "Saving..." : "Mark complete"}
         </button>
       </div>
+      {isExpired && (
+        <p className="mt-2 text-xs text-red-300">Past the expiry window in Tokyo; completion is locked.</p>
+      )}
+      {error && <p className="mt-2 text-xs text-red-300">{error}</p>}
     </li>
   )
 }

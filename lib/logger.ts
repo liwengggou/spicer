@@ -34,7 +34,11 @@ export const logger = {
   groupCreated: (groupId: string, userId: string, metadata?: Record<string, unknown>) => {
     log({ name: "group_created", group_id: groupId, user_id: userId, metadata })
   },
-  
+
+  groupDeleted: (groupId: string, userId: string, metadata?: Record<string, unknown>) => {
+    log({ name: "group_deleted", group_id: groupId, user_id: userId, metadata })
+  },
+
   inviteGenerated: (groupId: string, token: string, metadata?: Record<string, unknown>) => {
     log({ name: "invite_generated", group_id: groupId, data: { token }, metadata })
   },
@@ -71,13 +75,17 @@ export const logger = {
   },
   
   aiRequest: (groupId: string, requestData: unknown, priorCount: number) => {
+    const priorChallenges = Array.isArray((requestData as any)?.priorChallenges)
+      ? ((requestData as any).priorChallenges as Array<{ title?: string }>).map((c) => c?.title).filter(Boolean)
+      : []
+    const sampleTitles = priorChallenges.slice(0, 3)
     log({ 
       name: "ai_request", 
       group_id: groupId, 
       data: { 
         request_data: requestData, 
         prior_challenges_count: priorCount,
-        sample_titles: priorCount > 0 ? "[sample titles included]" : "[]"
+        sample_titles: sampleTitles
       } 
     })
   },
@@ -95,6 +103,14 @@ export const logger = {
       name: "long_distance_toggled", 
       group_id: groupId, 
       data: { enabled } 
+    })
+  },
+
+  longDistanceViolation: (groupId: string, challenge: { title?: string; description?: string }, terms: string[]) => {
+    log({
+      name: "long_distance_violation",
+      group_id: groupId,
+      data: { terms, sample_title: challenge?.title },
     })
   },
   
